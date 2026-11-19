@@ -1,0 +1,17 @@
+[package]
+name = "icloud-copy-board"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+plist = "1"
+idevice = { version = "=0.1.68", default-features = false, features = ["ring", "tcp", "usbmuxd", "heartbeat", "core_device_proxy", "tunnel_tcp_stack", "rsd", "core_device", "cryptexd"] }
+tokio = { version = "1", features = ["rt", "macros", "time", "sync"] }
+
+[target.'cfg(windows)'.dependencies]
+clipboard-win = "5"
+windows-sys = { version = "0.61", features = ["Win32_System_DataExchange", "Win32_System_Threading", "Win32_Security","Win32_Foundation"] }
+
+[dev-dependencies]
+plist-macro = "0.1.6"

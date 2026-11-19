@@ -1,0 +1,9 @@
+/target/
+*.exe
+*.dll
+*.plist
+*.pem
+*.key
+*.log
+__pycache__/
+.venv/
