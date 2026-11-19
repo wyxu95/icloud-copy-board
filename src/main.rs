@@ -1,6 +1,8 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod phone;
+#[cfg(windows)]
+mod tray;
 use anyhow::{Context, Result, bail, ensure};
 use idevice::{IdeviceService, heartbeat::HeartbeatClient};
 use phone::{Phone, revision};
@@ -121,6 +123,7 @@ struct State {
     seq: u32,
     revision: Option<phone::Revision>,
     receive_current: bool,
+    tooltip: tokio::sync::watch::Sender<&'static str>,
 }
 
 #[cfg(windows)]
@@ -129,6 +132,7 @@ async fn sync(phone: &mut Phone, state: &mut State) -> Result<()> {
         state.revision = Some(revision(&phone.pull(true).await?)?);
     }
     status("Connected");
+    state.tooltip.send_replace("iPhone 剪贴板共享 · 已连接");
     let mut poll = tokio::time::Instant::now();
     loop {
         if desktop::sequence() != state.seq
@@ -210,20 +214,28 @@ async fn main() -> std::process::ExitCode {
         } else {
             Some(desktop::Instance::acquire()?)
         };
+        let (tooltip, updates) = tokio::sync::watch::channel("iPhone 剪贴板共享 · 正在连接");
         let mut state = State {
             seq: desktop::sequence(),
             revision: None,
             receive_current: options.receive_current,
+            tooltip,
         };
-        loop {
-            let result = session(&options, &mut state).await;
-            if options.check {
-                return result;
+        if options.check {
+            return session(&options, &mut state).await;
+        }
+        let service = async {
+            loop {
+                if let Err(e) = session(&options, &mut state).await {
+                    status(&format!("Reconnecting: {e}"));
+                }
+                state.tooltip.send_replace("iPhone 剪贴板共享 · 正在重连");
+                sleep(Duration::from_secs(3)).await;
             }
-            if let Err(e) = result {
-                status(&format!("Reconnecting: {e}"));
-            }
-            sleep(Duration::from_secs(3)).await;
+        };
+        tokio::select! {
+            result = service => result,
+            result = tray::run(updates) => result,
         }
     }
     .await;

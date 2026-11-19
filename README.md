@@ -26,6 +26,8 @@ $p.ExitCode
 
 安装脚本会将程序复制到 `%LOCALAPPDATA%\ClipboardNative`，立即启动，并注册当前 Windows 用户的登录任务。它在交互式用户会话中访问剪贴板，使用期间可以关闭终端。无线 IP 变动时，用新地址重新运行安装命令即可。
 
+任务栏右下角有一个绿色剪贴板图标，鼠标悬停可查看连接状态。如果图标被折叠，点击时钟旁的上箭头，再将图标拖到时钟旁即可常驻显示。
+
 ```powershell
 Get-Content "$env:LOCALAPPDATA\ClipboardNative\status.txt"
 Get-ScheduledTask -TaskName 'ClipboardNative-*' | Select-Object TaskName, State
